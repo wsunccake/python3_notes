@@ -1,0 +1,26 @@
+# Python3 學習筆記
+
+- ch0. 開發環境
+  - [0-1. 安裝 Python 3](./content/ch0.md#0-1-安裝-python-3)
+  - [0-2. Editor / IDE](./content/ch0.md#0-2-editor--ide)
+  - [0-3. 執行 Python 腳本](./content/ch0.md#0-3-執行-python-腳本)
+  - [0-4. 參考資料](./content/ch0.md#0-4-參考資料)
+  - [0-5. 總結](./content/ch0.md#0-5-總結)
+  - [0-6. 練習](./content/ch0.md#0-6-練習)
+- ch1. 基礎語法
+  - [1-1. Python 程式基本結構與註解](./content/ch1.md#1-1-python-程式基本結構與註解)
+  - [1-2. 資料型別](./content/ch1.md#1-2-資料型別-data-types)
+  - [1-3. 變數](./content/ch1.md#1-3-變數-variables)
+  - [1-4. 運算子](./content/ch1.md#1-4-運算子-operators)
+  - [1-5. 流程控制](./content/ch1.md#1-5-流程控制-flow-control)
+  - [1-6. 總結](./content/ch1.md#1-6-總結)
+  - [1-7. 練習](./content/ch1.md#1-7-練習)
+- ch2. 進階語法
+  - [2-1. 變數進階用法](./content/ch2.md#2-1-變數進階用法-variable-advanced)
+  - [2-2. 函式](./content/ch2.md#2-2-函式-function)
+  - [2-3. 類別](./content/ch2.md#2-3-類別-class)
+  - [2-4. 模組與套件](./content/ch2.md#2-4-模組與套件-import)
+  - [2-5. 檔案操作](./content/ch2.md#2-5-檔案操作-file-io)
+  - [2-6. 錯誤與例外處理](./content/ch2.md#2-6-錯誤與例外處理-exception)
+  - [2-7. 總結](./content/ch2.md#2-7-總結)
+  - [2-8. 練習](./content/ch2.md#2-8-練習)
