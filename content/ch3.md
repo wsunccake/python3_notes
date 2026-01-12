@@ -157,346 +157,15 @@ print(f"只替換一次的字串: {new_text_once}")
 
 ---
 
-## 3-2. 裝飾器 (Decorator) 與閉包 (Closure)
-
-裝飾器和閉包是 Python 中兩個非常強大且常用的概念，它們允許在不修改原始程式碼的情況下，擴展或修改函數的行為。
-
-### 3-2-1. 閉包 (Closure)
-
-閉包是指一個函數記住了其被創建時的環境，即使該環境已經不存在，它仍然可以訪問該環境中的變數。簡單來說，當一個內部函數引用了外部函數的變數，並且外部函數回傳了這個內部函數時，就形成了一個閉包。
-
-**閉包的構成條件**:
-
-1.  必須有一個內部函數 (inner function)。
-2.  內部函數必須引用外部函數 (enclosing function) 的變數。
-3.  外部函數必須回傳內部函數。
-
-**範例**:
-
-```python
-def outer_function(msg):
-    # 外部函數的變數
-    message = msg
-
-    def inner_function():
-        # 內部函數引用了外部函數的變數 message
-        print(message)
-
-    # 外部函數回傳內部函數
-    return inner_function
-
-# 創建兩個閉包實例
-hi_func = outer_function("Hi there!")
-hello_func = outer_function("Hello world!")
-
-# 即使 outer_function 已經執行完畢，閉包仍然記住了 message 的值
-hi_func()    # 輸出: Hi there!
-hello_func() # 輸出: Hello world!
-```
-
-在這個範例中，`inner_function` 是一個閉包。它記住了 `outer_function` 執行時 `message` 變數的值。當 `hi_func()` 和 `hello_func()` 被呼叫時，它們分別列印出各自閉包中儲存的 `message`。
-
-### 3-2-2. 裝飾器 (Decorator)
-
-裝飾器本質上是一個函數，它接收另一個函數作為參數，並回傳一個新的函數 (通常是內部函數，利用閉包的特性)。裝飾器的主要目的是在不修改原始函數程式碼的情況下，為其添加額外的功能，例如日誌記錄、性能測量、權限檢查等。
-
-Python 提供了一種簡潔的語法來使用裝飾器：`@decorator_name`。
-
-**裝飾器的運作原理**:
-
-當下：
-
-```python
-@my_decorator
-def my_function():
-    pass
-```
-
-等同：
-
-```python
-def my_function():
-    pass
-my_function = my_decorator(my_function)
-```
-
-**範例**: 簡單的日誌記錄裝飾器
-
-```python
-def log_decorator(func):
-    def wrapper(*args, **kwargs):
-        print(f"呼叫函數: {func.__name__}，參數: {args}, {kwargs}")
-        result = func(*args, **kwargs)
-        print(f"函數 {func.__name__} 執行完畢，結果: {result}")
-        return result
-    return wrapper
-
-@log_decorator
-def add(a, b):
-    return a + b
-
-@log_decorator
-def subtract(a, b):
-    return a - b
-
-print(add(10, 5))
-print(subtract(20, 7))
-```
-
-**解釋**:
-
-1.  `log_decorator` 是一個裝飾器函數，它接收一個函數 `func` 作為參數。
-2.  在 `log_decorator` 內部定義了一個 `wrapper` 函數。這個 `wrapper` 函數就是一個閉包，它記住了外部函數 `log_decorator` 傳入的 `func`。
-3.  `wrapper` 函數在呼叫原始函數 `func` 之前和之後添加了日誌記錄功能。
-4.  `log_decorator` 回傳 `wrapper` 函數。
-5.  當我們在 `add` 和 `subtract` 函數上方使用 `@log_decorator` 時，實際上是將 `add = log_decorator(add)` 和 `subtract = log_decorator(subtract)`。這意味著 `add` 和 `subtract` 現在指向的是 `wrapper` 函數，而不是它們原始的定義。
-6.  當呼叫 `add(10, 5)` 時，實際上是呼叫 `wrapper(10, 5)`，`wrapper` 會執行日誌記錄，然後呼叫原始的 `add` 函數。
-
-### 3-2-3. 使用類別來建立裝飾器
-
-函式可以作為裝飾器，類別也可以。要讓一個類別變成可呼叫的 (callable)，就像函式一樣，我們需要在類別中實作 `__call__()` 這個特殊方法。這使得類別的實例 (instance) 可以像函式一樣被呼叫。
-
-使用類別作為裝飾器最大的好處是**可以儲存狀態 (state)**。
-
-**範例**：無參數的類別裝飾器 (儲存狀態)
-
-建立一個類別裝飾器，用來計算一個函式被呼叫了幾次。
-
-```python
-class CallCounter:
-    def __init__(self, func):
-        # 1. __init__ 在裝飾器被應用時執行
-        #    它接收被裝飾的函式 (func) 作為參數
-        print(f"Initializing decorator for {func.__name__}")
-        self.func = func
-        self.call_count = 0
-
-    def __call__(self, *args, **kwargs):
-        # 2. __call__ 在被裝飾的函式被「呼叫」時執行
-        self.call_count += 1
-        print(f"Function '{self.func.__name__}' has been called {self.call_count} times.")
-
-        # 3. 執行原始函式並返回其結果
-        return self.func(*args, **kwargs)
-
-# 使用類別裝飾器
-@CallCounter
-def say_hello(name):
-    print(f"Hello, {name}!")
-
-print("-" * 20)
-say_hello("Alice")
-# 輸出:
-# Function 'say_hello' has been called 1 times.
-# Hello, Alice!
-
-print("-" * 20)
-say_hello("Bob")
-# 輸出:
-# Function 'say_hello' has been called 2 times.
-# Hello, Bob!
-```
-
-- **步驟 1 (`__init__`)**: 當 Python 直譯器讀到 `@CallCounter` 時，它會建立一個 `CallCounter` 的實例，並將被裝飾的函式 `say_hello` 傳遞給 `__init__`。我們將這個函式和一個計數器 `call_count` 儲存在實例的屬性中。
-- **步驟 2 (`__call__`)**: 當我們呼叫 `say_hello("Alice")` 時，實際上是在呼叫 `CallCounter` 實例的 `__call__` 方法。在這個方法中，我們可以執行額外的邏輯 (例如增加計數器)，然後再執行原始的函式。
-
-**範例**： 帶有參數的類別裝飾器
-
-如果想讓裝飾器接收參數 (例如 `@my_decorator(arg)`), 結構會變得稍微複雜一些，它變成了一個「裝飾器工廠」。
-
-```python
-class Repeat:
-    def __init__(self, times):
-        # 1. __init__ 接收裝飾器的參數 (例如 3)
-        print(f"Decorator factory initialized with times={times}")
-        self.times = times
-
-    def __call__(self, func):
-        # 2. __call__ 接收被裝飾的函式
-        print(f"Decorator applied to {func.__name__}")
-
-        def wrapper(*args, **kwargs):
-            # 3. wrapper 是最終取代原始函式的函式
-            print(f"Executing {func.__name__} {self.times} times.")
-            for _ in range(self.times):
-                result = func(*args, **kwargs)
-            return result # 返回最後一次執行的結果
-
-        return wrapper
-
-# 使用帶參數的類別裝飾器
-@Repeat(times=3)
-def greet(name):
-    print(f"Greetings, {name}!")
-
-print("-" * 20)
-greet("World")
-# 輸出:
-# Executing greet 3 times.
-# Greetings, World!
-# Greetings, World!
-# Greetings, World!
-```
-
-- **步驟 1 (`__init__`)**: `@Repeat(times=3)` 首先會建立一個 `Repeat` 實例，並將 `times=3` 傳給 `__init__`。
-- **步驟 2 (`__call__`)**: Python 接著會呼叫這個實例的 `__call__` 方法，並將被裝飾的函式 `greet` 傳給它。
-- **步驟 3 (`wrapper`)**: `__call__` 方法必須返回一個新的函式 (`wrapper`)，這個 `wrapper` 函式才是最終用來取代 `greet` 的函式。`wrapper` 內部可以使用 `__init__` 中儲存的參數 `self.times`。
-
----
-
-### 3-2-4. 在類別的方法上使用裝飾器
-
-裝飾器也可以用在類別的實例方法、類別方法和靜態方法上。這時需要注意 `self` 和 `cls` 參數的傳遞。
-
-讓我們定義一個簡單的日誌裝飾器，並將它應用在不同類型的方法上。
-
-```python
-import functools
-
-def log_method_call(func):
-    """一個簡單的日誌裝飾器"""
-    @functools.wraps(func) # 保持原始函式的元資料 (如 __name__)
-    def wrapper(*args, **kwargs):
-        # args[0] 通常是 self 或 cls
-        print(f"Calling method: {func.__name__} on object/class: {args[0]}")
-        result = func(*args, **kwargs)
-        print(f"Finished method: {func.__name__}")
-        return result
-    return wrapper
-
-class MyCalculator:
-    def __init__(self, value):
-        self.value = value
-
-    @log_method_call
-    def add(self, num):
-        """實例方法 (Instance Method)"""
-        # wrapper 接收到的 args 會是 (self, num)
-        self.value += num
-        return self.value
-
-    @log_method_call
-    @classmethod
-    def create_with_double(cls, value):
-        """類別方法 (Class Method)"""
-        # wrapper 接收到的 args 會是 (cls, value)
-        return cls(value * 2)
-
-    @log_method_call
-    @staticmethod
-    def get_pi():
-        """靜態方法 (Static Method)"""
-        # wrapper 接收到的 args 會是 () (空的)
-        return 3.14159
-
-calc = MyCalculator(10)
-
-print("--- Testing instance method ---")
-calc.add(5)
-# 輸出:
-# Calling method: add on object/class: <__main__.MyCalculator object at ...>
-# Finished method: add
-
-print("\n--- Testing class method ---")
-new_calc = MyCalculator.create_with_double(10)
-# 輸出:
-# Calling method: create_with_double on object/class: <class '__main__.MyCalculator'>
-# Finished method: create_with_double
-print(f"New calculator value: {new_calc.value}") # 輸出 20
-
-print("\n--- Testing static method ---")
-MyCalculator.get_pi()
-# 輸出:
-# Calling method: get_pi on object/class: ()  <-- 注意這裡會報錯，因為 args 是空的
-# 修正裝飾器
-```
-
-**修正裝飾器以適應靜態方法**
-
-上面的 `log_method_call` 在裝飾靜態方法時會因為 `args[0]` 索引錯誤而失敗。一個更健壯的寫法是：
-
-```python
-def robust_log_method_call(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        # 檢查 args 是否為空
-        if args:
-            print(f"Calling method: {func.__name__} on object/class: {args[0]}")
-        else:
-            print(f"Calling static method: {func.__name__}")
-
-        result = func(*args, **kwargs)
-        print(f"Finished method: {func.__name__}")
-        return result
-    return wrapper
-
-# (在 MyCalculator 類別中使用 @robust_log_method_call 即可)
-```
-
-### 3-2-5. 內建的類別裝飾器
-
-Python 也提供了一些非常有用的內建裝飾器，專門用在類別中：
-
-- **`@staticmethod`**: 將一個方法轉換為靜態方法。它不接收隱含的 `self` 或 `cls` 參數，就像一個定義在類別命名空間內的普通函式。
-- **`@classmethod`**: 將一個方法轉換為類別方法。它的第一個參數是類別本身 (`cls`)，而不是實例 (`self`)。常用於建立工廠方法 (factory methods)，即用來建立類別實例的替代建構函式。
-- **`@property`**: 將一個方法變成「唯讀屬性」。這讓你可以像存取屬性一樣呼叫一個方法 (不需要加括號)，並在背後執行計算邏輯。通常會搭配 `@<property_name>.setter` 來建立可寫的屬性。
-
-### 3-2-6. 裝飾器與閉包總結
-
-閉包是函數記住其創建環境中變數的能力，是裝飾器實現其功能的基礎。裝飾器則提供了一種優雅的方式，在不修改原始函數程式碼的情況下，動態地為函數添加額外功能，提高了程式碼的模組化和可重用性。
-
-### 3-2-7. 裝飾器與閉包練習
-
-1.  **計時裝飾器**：
-    撰寫一個裝飾器 `timer_decorator`，用於測量函數的執行時間。將此裝飾器應用於一個簡單的函數 (例如計算 1 到 N 的和)，並觀察其輸出。
-
-    ```python
-    import time
-
-    def timer_decorator(func):
-        # 裝飾器程式碼
-        pass
-
-    @timer_decorator
-    def sum_up_to_n(n):
-        total = 0
-        for i in range(n + 1):
-            total += i
-        return total
-
-    sum_up_to_n(1000000)
-    ```
-
-2.  **帶參數的裝飾器**：
-    嘗試撰寫一個帶參數的裝飾器 `repeat(num_times)`，讓被裝飾的函數可以重複執行 `num_times` 次。
-
-    ```python
-    def repeat(num_times):
-        def decorator(func):
-            def wrapper(*args, **kwargs):
-                # 你的程式碼
-                pass
-            return wrapper
-        return decorator
-
-    @repeat(num_times=3)
-    def greet(name):
-        print(f"Hello, {name}!")
-
-    greet("Alice")
-    ```
-
----
-
-## 3-3. 程序 (Process) 管理
+## 3-2. 程序管理 (Process) 
 
 在 Python 中，執行外部命令或管理系統程序是常見的需求。Python 提供了 `os` 模組中的一些函數以及更現代、功能更強大的 `subprocess` 模組來實現這些功能。
 
-### 3-3-1. `os` 模組中的程序相關函數 (較舊且功能有限)
+### 3-2-1. `os` 模組中的程序相關函數 (較舊且功能有限)
 
 `os` 模組提供了一些與作業系統互動的函數，其中一些可以用來執行外部命令。然而，它們的功能相對有限，且在處理複雜情境時不如 `subprocess` 模組靈活。
 
-#### 3-3-1-1. `os.system(command)`
+#### 3-2-1-1. `os.system(command)`
 
 執行一個 shell 命令。它會啟動一個子 shell 來執行命令，並回傳命令的退出狀態碼。
 
@@ -519,7 +188,7 @@ return_code_fail = os.system("non_existent_command")
 print(f"不存在命令的退出碼: {return_code_fail}")
 ```
 
-#### 3-3-1-2. `os.popen(command, mode='r', bufsize=-1)`
+#### 3-2-1-2. `os.popen(command, mode='r', bufsize=-1)`
 
 執行一個 shell 命令，並回傳一個檔案物件 (file object)，可以透過這個物件讀取或寫入命令的標準輸入/輸出。
 
@@ -544,17 +213,17 @@ with os.popen("ls -a" if os.name == "posix" else "dir") as f:
         print(f"- {line.strip()}")
 ```
 
-#### 3-3-1-3. `os.spawn*()` 家族函數 (較少使用)
+#### 3-2-1-3. `os.spawn*()` 家族函數 (較少使用)
 
 `os.spawnl`, `os.spawnle`, `os.spawnlp`, `os.spawnlpe`, `os.spawnv`, `os.spawnve`, `os.spawnvp`, `os.spawnvpe` 這些函數用於在新的程序中執行程式。它們提供了對新程序執行方式的更多控制 (例如傳遞參數、環境變數)，但使用起來相對複雜，且在現代 Python 中，`subprocess` 模組通常是更好的選擇。
 
 由於其複雜性及 `subprocess` 的優越性，這裡不提供詳細範例。
 
-### 3-3-2. `subprocess` 模組 (現代 Python 推薦)
+### 3-2-2. `subprocess` 模組 (現代 Python 推薦)
 
 `subprocess` 模組是 Python 中執行外部命令和管理子程序的推薦方式。它提供了更強大、更靈活且更安全的介面，可以完全控制子程序的標準輸入、標準輸出和標準錯誤，並處理其退出狀態碼。
 
-#### 3-3-2-1. `subprocess.run()` (Python 3.5+ 推薦)
+#### 3-2-2-1. `subprocess.run()` (Python 3.5+ 推薦)
 
 `subprocess.run()` 是 `subprocess` 模組中最簡單且最推薦的函數，用於執行命令並等待其完成。它回傳一個 `CompletedProcess` 物件，其中包含子程序的輸出、錯誤和退出狀態碼。
 
@@ -623,7 +292,7 @@ except subprocess.CalledProcessError as e:
     print(f"命令執行失敗: {e}")
 ```
 
-#### 3-3-2-2. pipeline
+#### 3-2-2-2. pipeline
 
 **範例**: 實現 `pipeline` (`subprocess.Popen`)
 
@@ -667,7 +336,7 @@ except FileNotFoundError:
     print("命令未找到，請檢查路徑或命令名稱。")
 ```
 
-### 3-3-3. 程序管理總結
+### 3-2-3. 程序管理總結
 
 **`os` 家族與 `subprocess` 模組比較**
 
@@ -696,13 +365,13 @@ except FileNotFoundError:
 
 ---
 
-## 3-4. 多執行緒 (multithreading)
+## 3-3. 多執行緒 (multithreading)
 
 多執行緒 (Multithreading) 是指在單一程序中同時執行多個執行緒 (threads) 的能力。每個執行緒都是一個獨立的執行流程，它們共享同一個程序的記憶體空間，這使得執行緒之間的資料共享比多程序 (multiprocessing) 更為方便。然而，這也帶來了資料同步的挑戰。
 
 Python 的 `threading` 模組提供了建立和管理執行緒的工具。
 
-### 3-4-1. 子執行緒 (Child Thread)
+### 3-3-1. 子執行緒 (Child Thread)
 
 在主程式流程 (主執行緒) 中，建立並啟動一個新的執行緒 (子執行緒) 來執行特定的任務，而主執行緒可以繼續執行其他工作。
 
@@ -738,7 +407,7 @@ t.join()
 print("Done.")
 ```
 
-### 3-4-2. 多個子執行緒 (Multi Child Thread)
+### 3-3-2. 多個子執行緒 (Multi Child Thread)
 
 建立並執行多個子執行緒，讓它們並行處理任務。
 
@@ -772,7 +441,7 @@ for i in range(5):
 print("Done.")
 ```
 
-### 3-4-3. 使用類別建立執行緒 (With Class)
+### 3-3-3. 使用類別建立執行緒 (With Class)
 
 除了將函式作為 `target`，也可以透過繼承 `threading.Thread` 類別並覆寫 `run()` 方法來定義執行緒的行為。這是一種更具物件導向風格的作法。
 
@@ -806,7 +475,7 @@ for i in range(5):
 print("Done.")
 ```
 
-### 3-4-4. 佇列 (Queue)
+### 3-3-4. 佇列 (Queue)
 
 `queue` 模組提供了一個執行緒安全的佇列 `Queue`，是實現多執行緒之間資料交換和通訊的常用工具。它遵循「先進先出」(FIFO, First-In-First-Out) 的原則。因為它是執行緒安全的，所以不需要額外的鎖 (Lock) 來保護。
 
@@ -866,7 +535,7 @@ print("Done.")
 
 這個範例展示了典型的「生產者-消費者」模式：主執行緒是生產者，負責將資料放入佇列；`Worker` 執行緒是消費者，負責從佇列中取出資料並處理。
 
-### 3-4-5. 鎖 (Lock)
+### 3-3-5. 鎖 (Lock)
 
 當多個執行緒需要存取或修改同一個共享資源 (例如一個變數、檔案或裝置) 時，可能會發生「競爭條件」(Race Condition)，導致資料不一致或程式崩潰。`Lock` (鎖) 是一種同步機制，用來保護「臨界區段」(Critical Section) — 即一次只能被一個執行緒執行的程式碼區塊。
 
@@ -935,7 +604,7 @@ print("Done.")
   # 離開 with 區塊時，鎖會自動被釋放
   ```
 
-### 3-4-6. 號誌 (Semaphore)
+### 3-3-6. 號誌 (Semaphore)
 
 `Semaphore` (號誌) 是一個更廣義的鎖。它內部維護一個計數器，`acquire()` 會使計數器減一，`release()` 會使計數器加一。當計數器為 0 時，`acquire()` 會阻塞。
 
@@ -1000,7 +669,7 @@ print("Done.")
 - **`threading.Semaphore(value)`**: 建立一個號誌物件，`value` 是計數器的初始值，代表同時允許的執行緒數量。
 - 在這個範例中，雖然有 3 個 `Worker`，但由於 `Semaphore` 的值是 2，所以任何時候最多只有 2 個 `Worker` 能同時執行 `print` 和 `sleep` 的區塊。
 
-### 3-4-7. 可重入鎖 (RLock)
+### 3-3-7. 可重入鎖 (RLock)
 
 `RLock` (Re-entrant Lock) 是一種特殊的可重入鎖。一般的 `Lock` 不允許同一個執行緒在尚未釋放鎖的情況下再次取得它，這樣做會導致死鎖 (Deadlock)。而 `RLock` 允許同一個執行緒多次 `acquire()` 它，但必須有對應次數的 `release()` 才能將鎖完全釋放，供其他執行緒使用。
 
@@ -1036,7 +705,7 @@ print("Done.")
 - 在範例中，`recursive_function` 在每次進入時都會 `acquire` `rlock`。因為是 `RLock`，所以同一個執行緒可以成功地再次取得它。
 - 只有當最外層的 `with` 區塊結束時 (即 `n=3` 的那次呼叫結束)，鎖才會被完全釋放。
 
-### 3-4-8. 執行緒池 (ThreadPool)
+### 3-3-8. 執行緒池 (ThreadPool)
 
 手動建立、啟動和管理大量的執行緒是很繁瑣且低效率的。`ThreadPool` (執行緒池) 是一種管理模式，它會預先建立一定數量的執行緒放在一個「池」中。當有任務需要執行時，就從池中取一個空閒的執行緒來執行，任務結束後，執行緒會返回池中等待下一個任務，而不是被銷毀。
 
@@ -1089,7 +758,7 @@ print("All tasks submitted.")
 - **`Future` 物件**: 代表一個尚未完成的計算。你可以用它來檢查任務狀態 (`.done()`) 或取得結果 (`.result()`)。呼叫 `.result()` 會阻塞，直到任務完成並返回結果。
 - **`concurrent.futures.as_completed(futures)`**: 這是一個非常有用的函式，它接收一個 `Future` 物件的集合，並在任何一個 `Future` 完成時，就用 `yield` 將其返回。
 
-### 3-4-9. 多執行緒總結
+### 3-3-9. 多執行緒總結
 
 本章節介紹了 Python 中多執行緒程式設計的核心概念：
 
@@ -1104,7 +773,7 @@ print("All tasks submitted.")
 
 多執行緒程式設計的關鍵挑戰在於正確地管理共享狀態和同步，以避免競爭條件和死鎖。理解並善用 `Lock`, `Queue` 等工具是寫出健壯多執行緒程式的基礎。
 
-### 3-4-10. 多執行緒練習
+### 3-3-10. 多執行緒練習
 
 **目標**: 模擬一個多執行緒的網頁爬蟲。
 
@@ -1126,7 +795,7 @@ print("All tasks submitted.")
 
 ---
 
-## 3-5. 多程序 (multiprocessing)
+## 3-4. 多程序 (multiprocessing)
 
 多程序 (Multiprocessing) 是指在作業系統中同時執行多個獨立的程序 (processes)。與共享記憶體的多執行緒不同，每個程序都擁有自己獨立的記憶體空間、資源和 Python 直譯器。
 
@@ -1141,7 +810,7 @@ print("All tasks submitted.")
 
 **重要提示**: 在使用 `multiprocessing` 時，必須將主程式的執行程式碼放在 `if __name__ == '__main__':` 區塊內。這是為了防止子程序在被建立時，又重新匯入並執行主程式的程式碼，從而導致無限遞迴地建立子程序。
 
-### 3-5-1. 子程序 (Child Process)
+### 3-4-1. 子程序 (Child Process)
 
 與 `threading` 類似，可以在主程式中建立並啟動一個新的子程序來執行特定任務。
 
@@ -1181,7 +850,7 @@ if __name__ == '__main__':
 - **`p.start()`**: 啟動一個新的子程序來執行 `target` 指定的函式。
 - **`p.join()`**: 阻塞主程序，直到子程序 `p` 執行完畢。
 
-### 3-5-2. 多個子程序 (Multi Child Process)
+### 3-4-2. 多個子程序 (Multi Child Process)
 
 建立並執行多個子程序，讓它們在不同的 CPU 核心上平行處理任務。
 
@@ -1217,7 +886,7 @@ if __name__ == '__main__':
 
 ---
 
-### 3-5-3. 使用類別建立程序 (With Class)
+### 3-4-3. 使用類別建立程序 (With Class)
 
 同樣地，可以透過繼承 `multiprocessing.Process` 並覆寫 `run()` 方法來定義程序的行為。
 
@@ -1255,7 +924,7 @@ if __name__ == '__main__':
 
 ---
 
-### 3-5-4. 佇列 (Queue)
+### 3-4-4. 佇列 (Queue)
 
 `multiprocessing.Queue` 是用於跨程序通訊的主要工具之一。與 `threading.Queue` 不同，放入 `multiprocessing.Queue` 的物件在內部會被**序列化 (pickled)**，傳送到另一個程序後再**反序列化 (unpickled)**。這表示只有可序列化的物件才能在程序之間傳遞。
 
@@ -1306,7 +975,7 @@ if __name__ == '__main__':
 - **`multiprocessing.Queue()`**: 建立一個跨程序的佇列。
 - **哨兵值 (Sentinel Value)**: 在這個範例中，我們使用 `None` 作為一個特殊的「結束信號」。當消費者收到 `None` 時，就知道所有資料都已處理完畢，可以安全地退出迴圈。這比檢查 `qsize()` 更為可靠。
 
-### 3-5-5. 鎖 (Lock)
+### 3-4-5. 鎖 (Lock)
 
 `multiprocessing.Lock` 用於同步不同程序，防止它們同時存取共享資源。雖然程序有獨立的記憶體，但它們仍然可能存取共享的外部資源，例如檔案、資料庫或由 `multiprocessing.Value` / `multiprocessing.Array` 建立的共享記憶體。
 
@@ -1348,7 +1017,7 @@ if __name__ == '__main__':
 - **`multiprocessing.Value(typecode, value)`**: 建立一個可以在程序之間共享的記憶體物件。`'i'` 代表一個帶正負號的整數。
 - **`with lock:`**: `multiprocessing.Lock` 同樣支援 `with` 陳述式，這是管理鎖的最安全方式。如果沒有鎖，多個程序同時對 `counter` 進行「讀取-修改-寫入」操作，會導致競爭條件，最終結果將小於 10。
 
-### 3-5-6. 號誌 (Semaphore)
+### 3-4-6. 號誌 (Semaphore)
 
 `multiprocessing.Semaphore` 的作用與 `threading.Semaphore` 相同，但它是跨程序的。它允許有限數量的程序同時進入一個臨界區段。
 
@@ -1383,7 +1052,7 @@ if __name__ == '__main__':
 - **`multiprocessing.Semaphore(3)`**: 建立一個初始計數為 3 的號誌。
 - 在這個範例中，雖然我們啟動了 10 個程序，但任何時候最多只有 3 個程序能處於 `with semaphore:` 區塊內。
 
-### 3-5-7. 可重入鎖 (RLock)
+### 3-4-7. 可重入鎖 (RLock)
 
 `multiprocessing.RLock` 是一個可重入鎖，其行為與 `threading.RLock` 類似，但作用於程序之間。它允許同一個程序多次取得鎖，而不會造成死鎖。
 
@@ -1413,7 +1082,7 @@ if __name__ == '__main__':
 
 - 這個範例展示了在遞迴函式中使用 `RLock`。如果換成 `multiprocessing.Lock`，程序會在第二次 `acquire` 時永遠阻塞，造成死鎖。
 
-### 3-5-8. 程序池 (Process Pool)
+### 3-4-8. 程序池 (Process Pool)
 
 `multiprocessing.Pool` 是管理一組工作程序 (Worker Process) 的便捷方式。它提供了一個簡單的介面，可以將任務分配給程序池中的工作程序執行，非常適合處理「資料平行」(data parallelism) 的問題，例如對一個列表中的每個元素執行相同的操作。
 
@@ -1452,7 +1121,7 @@ if __name__ == '__main__':
 - **`pool.map(func, iterable)`**: 這是一個非常強大的方法。它會將 `iterable` 中的每一個元素作為參數，傳遞給 `func` 函式，並行地在程序池中執行。它會保持結果的順序，並在所有任務完成後返回結果列表。
 - **`with ... as pool:`**: 使用 `with` 陳述式可以確保在區塊結束時，程序池會被正確地關閉 (`pool.close()`) 和清理 (`pool.join()`)。
 
-### 3-5-9. 多程序總結
+### 3-4-9. 多程序總結
 
 `multiprocessing` 是 Python 中實現真正平行計算的標準工具，是解決 CPU 密集型問題的利器。
 
@@ -1467,7 +1136,7 @@ if __name__ == '__main__':
 - 當你的任務是 **CPU 密集型** (例如：影像處理、數學運算、機器學習模型訓練的某些部分)，並且你希望在多核心機器上獲得顯著的加速時，請選擇 **`multiprocessing`**。
 - 當你的任務是 **I/O 密集型** (例如：同時下載多個網頁、讀寫多個檔案、查詢資料庫)，程式大部分時間都在等待外部資源回應時，請選擇 **`threading`**，因為它的資源開銷更小。
 
-### 3-5-10. 多程序練習
+### 3-4-10. 多程序練習
 
 **目標**: 使用 `multiprocessing.Pool` 平行計算一個數字列表中每個數字的階乘。
 
@@ -1487,7 +1156,7 @@ if __name__ == '__main__':
 
 ---
 
-## 3-6. 平行化 (parallelism)
+## 3-5. 平行化 (parallelism)
 
 在探討 `multiprocessing` 和 `threading` 之前，先釐清兩個重要概念：
 
@@ -1496,7 +1165,7 @@ if __name__ == '__main__':
 
 在 Python 中，`threading` 主要實現了**並行**，而 `multiprocessing` 則實現了**平行**。
 
-### 3-6-1. `threading` (多執行緒)
+### 3-5-1. `threading` (多執行緒)
 
 - **運作方式**: 在單一程序中建立多個執行緒，所有執行緒共享同一個記憶體空間。
 - **關鍵限制：全域直譯器鎖 (Global Interpreter Lock, GIL)**: 在 CPython (最主流的 Python 直譯器) 中，GIL 是一把大鎖，它確保任何時候只有一個執行緒能執行 Python 的位元組碼 (bytecode)。這意味著，即使在多核心 CPU 上，Python 的多執行緒也無法實現 CPU 運算的真正平行。
@@ -1509,7 +1178,7 @@ if __name__ == '__main__':
 - **最佳使用情境**: **I/O 密集型 (I/O-Bound) 任務**。
   - **說明**: 當一個任務需要等待外部資源時 (例如：讀寫檔案、請求網路資料、查詢資料庫)，執行緒會釋放 GIL，讓其他執行緒可以執行。這使得程式可以在等待 I/O 的空檔期去執行其他工作，從而大大提高整體效率。
 
-### 3-6-2. `multiprocessing` (多程序)
+### 3-5-2. `multiprocessing` (多程序)
 
 - **運作方式**: 建立多個獨立的作業系統程序，每個程序都有自己獨立的記憶體空間和 Python 直譯器。
 - **關鍵優勢：繞過 GIL**: 因為每個程序都有自己的直譯器和 GIL，所以它們之間互不影響，作業系統可以將它們分配到不同的 CPU 核心上，實現真正的平行運算。
@@ -1522,7 +1191,7 @@ if __name__ == '__main__':
 - **最佳使用情境**: **CPU 密集型 (CPU-Bound) 任務**。
   - **說明**: 當一個任務需要大量的 CPU 計算時 (例如：科學運算、影像處理、資料分析)，`multiprocessing` 可以將任務拆分給多個程序，在多個核心上同時執行，從而顯著縮短總執行時間。
 
-### 3-6-3. 優缺差異比較表
+### 3-5-3. 優缺差異比較表
 
 | 特性           | `threading` (多執行緒)      | `multiprocessing` (多程序)  |
 | :------------- | :-------------------------- | :-------------------------- |
@@ -1533,11 +1202,11 @@ if __name__ == '__main__':
 | **資料共享**   | 簡單、快速 (直接存取)       | 複雜、較慢 (需序列化)       |
 | **風險**       | 競爭條件 (Race Conditions)  | 程序間通訊的複雜性          |
 
-### 3-6-4. 同步工具常用情境
+### 3-5-4. 同步工具常用情境
 
 在並行或平行程式設計中，為了協調不同執行緒/程序的行為，避免混亂，我們需要使用同步工具。
 
-#### 3-6-4-1. `Queue` (佇列)
+#### 3-5-4-1. `Queue` (佇列)
 
 - **核心作用**: 在生產者和消費者之間安全地傳遞資料。
 - **常見情境**: **生產者-消費者模型 (Producer-Consumer Pattern)**。
@@ -1550,7 +1219,7 @@ if __name__ == '__main__':
   - **執行緒/程序安全**: `Queue` 內部已經處理好了鎖定問題，你不需要手動加鎖就可以安全地在多個執行緒/程序中 `put` 和 `get`。
   - **流量緩衝**: 如果生產者的速度快於消費者，`Queue` 可以作為一個緩衝區，暫存任務，避免任務遺失。
 
-#### 3-6-4-2. `Lock` (鎖)
+#### 3-5-4-2. `Lock` (鎖)
 
 - **核心作用**: 保護「臨界區段」(Critical Section)，確保同一時間只有一個執行緒/程序可以存取某個共享資源。這稱為**互斥 (Mutual Exclusion)**。
 - **常見情境**: 任何「讀取-修改-寫入」一個共享變數的操作都需要被保護。
@@ -1568,7 +1237,7 @@ if __name__ == '__main__':
           logfile.write(f"[{timestamp}] {message}\n")
       ```
 
-#### 3-6-4-3. `RLock` (可重入鎖)
+#### 3-5-4-3. `RLock` (可重入鎖)
 
 - **核心作用**: `Lock` 的變體，允許**同一個**執行緒/程序在釋放鎖之前，**多次**取得該鎖。
 - **常見情境**: 在遞迴或多層巢狀函式中，需要重複取得同一個鎖。
@@ -1597,7 +1266,7 @@ if __name__ == '__main__':
   - 如果用的是 `Lock`，`method_B` 會永遠等待 `method_A` 釋放鎖，但 `method_A` 必須等 `method_B` 執行完才能釋放鎖，這就造成了**死鎖 (Deadlock)**。
   - 如果用的是 `RLock`，因為是同一個執行緒在操作，所以 `method_B` 可以成功地再次取得鎖。`RLock` 內部會維護一個計數，只有當最外層的 `with` 區塊結束時，鎖才會被真正釋放。
 
-#### 3-6-4-4. `Semaphore` (號誌)
+#### 3-5-4-4. `Semaphore` (號誌)
 
 - **核心作用**: `Lock` 只允許 0 或 1 個執行緒進入，而 `Semaphore` 允許**有限數量** (N > 1) 的執行緒/程序同時進入。
 - **常見情境**: 控制對一個有限資源池的存取。
@@ -1605,7 +1274,7 @@ if __name__ == '__main__':
   1.  **資料庫連線池**: 一個應用程式的資料庫連線池中只有 10 個可用連線。你可以使用 `Semaphore(10)` 來管理。任何時候，最多只有 10 個執行緒可以從池中取得連線。第 11 個執行緒在呼叫 `semaphore.acquire()` 時將會被阻塞，直到前面有執行緒完成工作並 `release()` 了號誌 (歸還了連線)。
   2.  **API 速率限制**: 你正在使用一個第三方 API，它限制你的帳號最多只能有 5 個並發請求。你可以用 `Semaphore(5)` 來包裝你的 API 呼叫函式，確保你的程式不會因為請求過多而被封鎖。
 
-### 3-6-5. 總結
+### 3-5-5. 總結
 
 - `threading` 和 `multiprocessing` 提供了不同的併發/平行模型，前者適用於 I/O 密集型任務，後者適用於 CPU 密集型任務。
 - `Queue`, `Lock`, `RLock`, `Semaphore` 是解決並行/平行程式設計中資料同步和資源管理問題的關鍵工具。

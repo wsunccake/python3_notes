@@ -306,7 +306,42 @@
   print(sorted_points) # 輸出: [(3, 2), (1, 5), (5, 8)]
   ```
 
-### 2-2-5. `lambda` 函數與外部變數的互動 (閉包)
+### 2-2-5. 閉包 (Closure)
+
+閉包是指一個函數記住了其被創建時的環境，即使該環境已經不存在，它仍然可以訪問該環境中的變數。簡單來說，當一個內部函數引用了外部函數的變數，並且外部函數回傳了這個內部函數時，就形成了一個閉包。
+
+**閉包的構成條件**:
+
+1.  必須有一個內部函數 (inner function)。
+2.  內部函數必須引用外部函數 (enclosing function) 的變數。
+3.  外部函數必須回傳內部函數。
+
+**範例**:
+
+```python
+def outer_function(msg):
+    # 外部函數的變數
+    message = msg
+
+    def inner_function():
+        # 內部函數引用了外部函數的變數 message
+        print(message)
+
+    # 外部函數回傳內部函數
+    return inner_function
+
+# 創建兩個閉包實例
+hi_func = outer_function("Hi there!")
+hello_func = outer_function("Hello world!")
+
+# 即使 outer_function 已經執行完畢，閉包仍然記住了 message 的值
+hi_func()    # 輸出: Hi there!
+hello_func() # 輸出: Hello world!
+```
+
+在這個範例中，`inner_function` 是一個閉包。它記住了 `outer_function` 執行時 `message` 變數的值。當 `hi_func()` 和 `hello_func()` 被呼叫時，它們分別列印出各自閉包中儲存的 `message`。
+
+### 2-2-6. `lambda` 函數與外部變數的互動 (閉包)
 
 - **意義**: `lambda` 函數可存取其定義時所在環境中的變數。當外部函數回傳一個 `lambda` 函數時，即使外部函數已經執行完畢，`lambda` 函數仍然會「記住」外部函數作用域中的變數，這就是閉包的特性。
 
@@ -326,7 +361,7 @@
   print(f"5 乘以 3 的結果: {triple(5)}")
   ```
 
-### 2-2-6. 變數作用域 (Scope)
+### 2-2-7. 變數作用域 (Scope)
 
 - **描述**: 變數的可見範圍。Python 遵循 **LEGB** 規則來查找變數：
   1.  **L (Local)**: 區域作用域，指函式內部的範圍。
@@ -557,6 +592,257 @@
 
   my_dog._Dog__private_method() # 透過名稱改寫呼叫私有方法 (不建議)
   ```
+
+---
+
+## 2-4. 裝飾器 (Decorator)
+
+裝飾器是 Python 中兩個非常強大且常用的概念，允許在不修改原始程式碼的情況下，擴展或修改函數的行為。
+
+裝飾器本質上是一個函數，它接收另一個函數作為參數，並回傳一個新的函數 (通常是內部函數，利用閉包的特性)。裝飾器的主要目的是在不修改原始函數程式碼的情況下，為其添加額外的功能，例如日誌記錄、性能測量、權限檢查等。
+
+Python 提供了一種簡潔的語法來使用裝飾器：`@decorator_name`。
+
+### 2-4-1. 運作原理
+
+當下：
+
+```python
+@my_decorator
+def my_function():
+    pass
+```
+
+等同：
+
+```python
+def my_function():
+    pass
+my_function = my_decorator(my_function)
+```
+
+**範例**: 簡單的日誌記錄裝飾器
+
+```python
+def log_decorator(func):
+    def wrapper(*args, **kwargs):
+        print(f"呼叫函數: {func.__name__}，參數: {args}, {kwargs}")
+        result = func(*args, **kwargs)
+        print(f"函數 {func.__name__} 執行完畢，結果: {result}")
+        return result
+    return wrapper
+
+@log_decorator
+def add(a, b):
+    return a + b
+
+@log_decorator
+def subtract(a, b):
+    return a - b
+
+print(add(10, 5))
+print(subtract(20, 7))
+```
+
+**解釋**:
+
+1.  `log_decorator` 是一個裝飾器函數，它接收一個函數 `func` 作為參數。
+2.  在 `log_decorator` 內部定義了一個 `wrapper` 函數。這個 `wrapper` 函數就是一個閉包，它記住了外部函數 `log_decorator` 傳入的 `func`。
+3.  `wrapper` 函數在呼叫原始函數 `func` 之前和之後添加了日誌記錄功能。
+4.  `log_decorator` 回傳 `wrapper` 函數。
+5.  當我們在 `add` 和 `subtract` 函數上方使用 `@log_decorator` 時，實際上是將 `add = log_decorator(add)` 和 `subtract = log_decorator(subtract)`。這意味著 `add` 和 `subtract` 現在指向的是 `wrapper` 函數，而不是它們原始的定義。
+6.  當呼叫 `add(10, 5)` 時，實際上是呼叫 `wrapper(10, 5)`，`wrapper` 會執行日誌記錄，然後呼叫原始的 `add` 函數。
+
+### 2-4-2. 使用類別來建立裝飾器
+
+函式可以作為裝飾器，類別也可以。要讓一個類別變成可呼叫的 (callable)，就像函式一樣，我們需要在類別中實作 `__call__()` 這個特殊方法。這使得類別的實例 (instance) 可以像函式一樣被呼叫。
+
+使用類別作為裝飾器最大的好處是**可以儲存狀態 (state)**。
+
+**範例**：無參數的類別裝飾器 (儲存狀態)
+
+建立一個類別裝飾器，用來計算一個函式被呼叫了幾次。
+
+```python
+class CallCounter:
+    def __init__(self, func):
+        # 1. __init__ 在裝飾器被應用時執行
+        #    它接收被裝飾的函式 (func) 作為參數
+        print(f"Initializing decorator for {func.__name__}")
+        self.func = func
+        self.call_count = 0
+
+    def __call__(self, *args, **kwargs):
+        # 2. __call__ 在被裝飾的函式被「呼叫」時執行
+        self.call_count += 1
+        print(f"Function '{self.func.__name__}' has been called {self.call_count} times.")
+
+        # 3. 執行原始函式並返回其結果
+        return self.func(*args, **kwargs)
+
+# 使用類別裝飾器
+@CallCounter
+def say_hello(name):
+    print(f"Hello, {name}!")
+
+print("-" * 20)
+say_hello("Alice")
+# 輸出:
+# Function 'say_hello' has been called 1 times.
+# Hello, Alice!
+
+print("-" * 20)
+say_hello("Bob")
+# 輸出:
+# Function 'say_hello' has been called 2 times.
+# Hello, Bob!
+```
+
+- **步驟 1 (`__init__`)**: 當 Python 直譯器讀到 `@CallCounter` 時，它會建立一個 `CallCounter` 的實例，並將被裝飾的函式 `say_hello` 傳遞給 `__init__`。我們將這個函式和一個計數器 `call_count` 儲存在實例的屬性中。
+- **步驟 2 (`__call__`)**: 當我們呼叫 `say_hello("Alice")` 時，實際上是在呼叫 `CallCounter` 實例的 `__call__` 方法。在這個方法中，我們可以執行額外的邏輯 (例如增加計數器)，然後再執行原始的函式。
+
+**範例**： 帶有參數的類別裝飾器
+
+如果想讓裝飾器接收參數 (例如 `@my_decorator(arg)`), 結構會變得稍微複雜一些，它變成了一個「裝飾器工廠」。
+
+```python
+class Repeat:
+    def __init__(self, times):
+        # 1. __init__ 接收裝飾器的參數 (例如 3)
+        print(f"Decorator factory initialized with times={times}")
+        self.times = times
+
+    def __call__(self, func):
+        # 2. __call__ 接收被裝飾的函式
+        print(f"Decorator applied to {func.__name__}")
+
+        def wrapper(*args, **kwargs):
+            # 3. wrapper 是最終取代原始函式的函式
+            print(f"Executing {func.__name__} {self.times} times.")
+            for _ in range(self.times):
+                result = func(*args, **kwargs)
+            return result # 返回最後一次執行的結果
+
+        return wrapper
+
+# 使用帶參數的類別裝飾器
+@Repeat(times=3)
+def greet(name):
+    print(f"Greetings, {name}!")
+
+print("-" * 20)
+greet("World")
+# 輸出:
+# Executing greet 3 times.
+# Greetings, World!
+# Greetings, World!
+# Greetings, World!
+```
+
+- **步驟 1 (`__init__`)**: `@Repeat(times=3)` 首先會建立一個 `Repeat` 實例，並將 `times=3` 傳給 `__init__`。
+- **步驟 2 (`__call__`)**: Python 接著會呼叫這個實例的 `__call__` 方法，並將被裝飾的函式 `greet` 傳給它。
+- **步驟 3 (`wrapper`)**: `__call__` 方法必須返回一個新的函式 (`wrapper`)，這個 `wrapper` 函式才是最終用來取代 `greet` 的函式。`wrapper` 內部可以使用 `__init__` 中儲存的參數 `self.times`。
+
+### 2-4-3. 在類別的方法上使用裝飾器
+
+裝飾器也可以用在類別的實例方法、類別方法和靜態方法上。這時需要注意 `self` 和 `cls` 參數的傳遞。
+
+定義一個簡單的日誌裝飾器，並將它應用在不同類型的方法上。
+
+```python
+import functools
+
+def log_method_call(func):
+    """一個簡單的日誌裝飾器"""
+    @functools.wraps(func) # 保持原始函式的元資料 (如 __name__)
+    def wrapper(*args, **kwargs):
+        # args[0] 通常是 self 或 cls
+        print(f"Calling method: {func.__name__} on object/class: {args[0]}")
+        result = func(*args, **kwargs)
+        print(f"Finished method: {func.__name__}")
+        return result
+    return wrapper
+
+class MyCalculator:
+    def __init__(self, value):
+        self.value = value
+
+    @log_method_call
+    def add(self, num):
+        """實例方法 (Instance Method)"""
+        # wrapper 接收到的 args 會是 (self, num)
+        self.value += num
+        return self.value
+
+    @log_method_call
+    @classmethod
+    def create_with_double(cls, value):
+        """類別方法 (Class Method)"""
+        # wrapper 接收到的 args 會是 (cls, value)
+        return cls(value * 2)
+
+    @log_method_call
+    @staticmethod
+    def get_pi():
+        """靜態方法 (Static Method)"""
+        # wrapper 接收到的 args 會是 () (空的)
+        return 3.14159
+
+calc = MyCalculator(10)
+
+print("--- Testing instance method ---")
+calc.add(5)
+# 輸出:
+# Calling method: add on object/class: <__main__.MyCalculator object at ...>
+# Finished method: add
+
+print("\n--- Testing class method ---")
+new_calc = MyCalculator.create_with_double(10)
+# 輸出:
+# Calling method: create_with_double on object/class: <class '__main__.MyCalculator'>
+# Finished method: create_with_double
+print(f"New calculator value: {new_calc.value}") # 輸出 20
+
+print("\n--- Testing static method ---")
+MyCalculator.get_pi()
+# 輸出:
+# Calling method: get_pi on object/class: ()  <-- 注意這裡會報錯，因為 args 是空的
+# 修正裝飾器
+```
+
+**修正裝飾器以適應靜態方法**
+
+上面的 `log_method_call` 在裝飾靜態方法時會因為 `args[0]` 索引錯誤而失敗。一個更健壯的寫法是：
+
+```python
+def robust_log_method_call(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # 檢查 args 是否為空
+        if args:
+            print(f"Calling method: {func.__name__} on object/class: {args[0]}")
+        else:
+            print(f"Calling static method: {func.__name__}")
+
+        result = func(*args, **kwargs)
+        print(f"Finished method: {func.__name__}")
+        return result
+    return wrapper
+
+# (在 MyCalculator 類別中使用 @robust_log_method_call 即可)
+```
+
+### 2-4-4. 內建的類別裝飾器
+
+Python 也提供了一些非常有用的內建裝飾器，專門用在類別中：
+
+- **`@staticmethod`**: 將一個方法轉換為靜態方法。它不接收隱含的 `self` 或 `cls` 參數，就像一個定義在類別命名空間內的普通函式。
+- **`@classmethod`**: 將一個方法轉換為類別方法。它的第一個參數是類別本身 (`cls`)，而不是實例 (`self`)。常用於建立工廠方法 (factory methods)，即用來建立類別實例的替代建構函式。
+- **`@property`**: 將一個方法變成「唯讀屬性」。這讓你可以像存取屬性一樣呼叫一個方法 (不需要加括號)，並在背後執行計算邏輯。通常會搭配 `@<property_name>.setter` 來建立可寫的屬性。
+
+### 3-2-6. 裝飾器總結
+
+閉包是函數記住其創建環境中變數的能力，是裝飾器實現其功能的基礎。裝飾器則提供了一種優雅的方式，在不修改原始函數程式碼的情況下，動態地為函數添加額外功能，提高了程式碼的模組化和可重用性。
 
 ---
 
@@ -828,17 +1114,58 @@
     - 包含一個私有的實例變數 `__fuel_level`，並提供一個公開的方法 `get_fuel_level()` 來讀取它。
     - 創建一個 `Car` 物件並嘗試從外部存取這些變數。
 
-### 2-8-4. 模組與套件
+### 2-8-4. 裝飾器練習
+
+1.  **計時裝飾器**：
+    撰寫一個裝飾器 `timer_decorator`，用於測量函數的執行時間。將此裝飾器應用於一個簡單的函數 (例如計算 1 到 N 的和)，並觀察其輸出。
+
+    ```python
+    import time
+
+    def timer_decorator(func):
+        # 裝飾器程式碼
+        pass
+
+    @timer_decorator
+    def sum_up_to_n(n):
+        total = 0
+        for i in range(n + 1):
+            total += i
+        return total
+
+    sum_up_to_n(1000000)
+    ```
+
+2.  **帶參數的裝飾器**：
+    嘗試撰寫一個帶參數的裝飾器 `repeat(num_times)`，讓被裝飾的函數可以重複執行 `num_times` 次。
+
+    ```python
+    def repeat(num_times):
+        def decorator(func):
+            def wrapper(*args, **kwargs):
+                # 你的程式碼
+                pass
+            return wrapper
+        return decorator
+
+    @repeat(num_times=3)
+    def greet(name):
+        print(f"Hello, {name}!")
+
+    greet("Alice")
+    ```
+
+### 2-8-5. 模組與套件
 
 1.  **建立模組**: 建立一個 `geometry.py` 檔案，在其中定義兩個函式：`circle_area(radius)` 和 `rectangle_area(width, height)`。
 2.  **使用模組**: 建立另一個 `app.py` 檔案，從 `geometry` 模組中 `import` 這兩個函式，並呼叫它們來計算圓形和矩形的面積。
 
-### 2-8-5. 檔案操作
+### 2-8-6. 檔案操作
 
 1.  **寫入日誌**: 撰寫一個函式 `log_message(message)`，它會將帶有時間戳的訊息附加到 `app.log` 檔案中。例如，呼叫 `log_message("User logged in")` 後，檔案中會新增一行類似 `"2023-10-27 10:30:00 - User logged in"` 的內容。
 2.  **讀取與計數**: 讀取您剛才建立的 `app.log` 檔案，並計算檔案中總共有幾行日誌。
 
-### 2-8-6. 例外處理
+### 2-8-7. 例外處理
 
 1.  **安全的字典取值**: 撰寫一個函式 `get_value(data_dict, key)`，它會嘗試回傳字典中指定鍵的值。如果鍵不存在 (`KeyError`)，函式應回傳 `None` 而不是讓程式崩潰。
 2.  **檔案讀取器**: 撰寫一個程式，提示使用者輸入檔名，然後讀取並印出檔案內容。使用 `try...except` 來處理檔案不存在 (`FileNotFoundError`) 的情況，並在這種情況下印出友善的錯誤訊息。

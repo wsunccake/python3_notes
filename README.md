@@ -24,3 +24,9 @@
   - [2-6. 錯誤與例外處理](./content/ch2.md#2-6-錯誤與例外處理-exception)
   - [2-7. 總結](./content/ch2.md#2-7-總結)
   - [2-8. 練習](./content/ch2.md#2-8-練習)
+- ch3. 其他主題
+  - [3-1. 正規表示式](./content/ch3.md#3-1正規表示式-regular-expressions)
+  - [3-2. 程序管理](./content/ch3.md#3-2-程序管理-process)
+  - [3-3. 多執行緒](./content/ch3.md#3-3-多執行緒-multithreading)
+  - [3-4. 多程序](./content/ch3.md#3-4-多程序-multiprocessing)
+  - [3-5. 平行化](./content/ch3.md#3-5-平行化-parallelism)
