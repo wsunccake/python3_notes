@@ -30,3 +30,7 @@
   - [3-3. 多執行緒](./content/ch3.md#3-3-多執行緒-multithreading)
   - [3-4. 多程序](./content/ch3.md#3-4-多程序-multiprocessing)
   - [3-5. 平行化](./content/ch3.md#3-5-平行化-parallelism)
+- ch4. 其他主題
+  - [4-1. 迭代](./content/ch4.md#4-1-迭代--iteration)
+  - [4-2. 生成器](./content/ch4.md#4-2-生成器--yield)
+  - [4-3. 並行處理](./content/ch4.md#4-3-並行處理--concurrent)
